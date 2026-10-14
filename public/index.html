@@ -1,0 +1,931 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CP Tracker - Codeforces & LeetCode Performance</title>
+  <link rel="icon" type="image/svg+xml" href="favicon.svg" />
+  <!-- Immediate Theme Initialization to prevent flash -->
+  <script>
+    (function() {
+      try {
+        var pref = localStorage.getItem('cp_theme_preference') || 'system';
+        var isDark = pref === 'system' ? (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) : pref === 'dark';
+        if (isDark) {
+          document.documentElement.classList.add('dark');
+          document.documentElement.classList.remove('light');
+        } else {
+          document.documentElement.classList.add('light');
+          document.documentElement.classList.remove('dark');
+        }
+      } catch (e) {}
+    })();
+  </script>
+  <!-- Local Tailwind CSS (compiled via npm) -->
+  <link rel="stylesheet" href="tailwind.css" />
+  <!-- Local Custom Design System & Theme Styles -->
+  <link rel="stylesheet" href="styles.css" />
+  <!-- Local Chart.js (installed via npm) -->
+  <script src="vendor/chart.umd.js"></script>
+  <!-- Local Lucide Icons (installed via npm) -->
+  <script src="vendor/lucide.js"></script>
+</head>
+<body class="min-h-screen bg-[#090d16] text-slate-100 selection:bg-indigo-500 selection:text-white">
+
+  <!-- TOP NAVIGATION BAR -->
+  <!-- TOP NAVIGATION BAR -->
+  <header class="sticky top-0 z-50 bg-[#090d16]/85 backdrop-blur-md border-b border-white/10 px-3 sm:px-4 lg:px-8 py-3">
+    <div class="max-w-7xl mx-auto flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
+      
+      <!-- Brand Logo & Title -->
+      <div class="flex items-center justify-between sm:justify-start gap-3">
+        <a href="/" class="flex items-center gap-3 hover:opacity-90 transition-opacity">
+          <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-blue-600 via-indigo-600 to-amber-500 p-0.5 shadow-lg shadow-indigo-500/20 shrink-0">
+            <div class="w-full h-full bg-[#090d16] rounded-[10px] flex items-center justify-center">
+              <i data-lucide="terminal" class="w-5 h-5 text-indigo-400"></i>
+            </div>
+          </div>
+          <div>
+            <div class="flex items-center gap-2">
+              <h1 class="text-base sm:text-lg font-bold tracking-tight text-white whitespace-nowrap">CP Tracker</h1>
+              <span class="px-2 py-0.5 text-[10px] font-semibold bg-blue-500/10 text-blue-400 border border-blue-500/20 rounded-full">Codeforces</span>
+              <span class="px-2 py-0.5 text-[10px] font-semibold bg-amber-500/10 text-amber-400 border border-amber-500/20 rounded-full">LeetCode</span>
+            </div>
+            <p class="text-xs text-slate-400">Trace questions, contests & ratings by username</p>
+          </div>
+        </a>
+      </div>
+
+      <!-- Quick Universal Search Input in Header -->
+      <div class="flex flex-wrap sm:flex-nowrap items-center gap-2 w-full md:w-auto">
+        <!-- Universal Single Input -->
+        <div id="singleSearchBox" class="relative flex-1 w-full sm:w-auto md:w-72">
+          <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+            <i data-lucide="search" class="w-4 h-4"></i>
+          </div>
+          <input 
+            type="text" 
+            id="universalUsernameInput" 
+            placeholder="Search username (e.g. tourist, neal_wu)..." 
+            class="w-full pl-9 pr-3 py-2 min-h-[42px] text-xs md:text-sm font-mono rounded-xl bg-slate-900/90 border border-white/10 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 placeholder-slate-500 text-slate-200"
+          />
+        </div>
+
+        <!-- Split Inputs (Hidden by default, toggled via Split button) -->
+        <div id="splitInputsContainer" class="hidden flex-1 sm:flex-initial flex items-center gap-2 w-full sm:w-auto">
+          <div class="relative flex-1 sm:w-36 min-w-[110px]">
+            <div class="absolute inset-y-0 left-0 pl-2.5 flex items-center pointer-events-none text-blue-400">
+              <i data-lucide="code-2" class="w-3.5 h-3.5"></i>
+            </div>
+            <input 
+              type="text" 
+              id="cfHandleInput" 
+              placeholder="CF Handle" 
+              class="w-full pl-8 pr-2 py-2 min-h-[42px] text-xs font-mono rounded-xl bg-slate-900 border border-blue-500/40 text-slate-200 focus:outline-none"
+            />
+          </div>
+          <div class="relative flex-1 sm:w-36 min-w-[110px]">
+            <div class="absolute inset-y-0 left-0 pl-2.5 flex items-center pointer-events-none text-amber-400">
+              <i data-lucide="cpu" class="w-3.5 h-3.5"></i>
+            </div>
+            <input 
+              type="text" 
+              id="lcHandleInput" 
+              placeholder="LC Username" 
+              class="w-full pl-8 pr-2 py-2 min-h-[42px] text-xs font-mono rounded-xl bg-slate-900 border border-amber-500/40 text-slate-200 focus:outline-none"
+            />
+          </div>
+        </div>
+
+        <!-- Action Buttons Group -->
+        <div class="flex items-center gap-1.5 shrink-0">
+          <!-- Toggle Split Mode Button -->
+          <button 
+            id="toggleSplitBtn" 
+            title="Different handles on Codeforces & LeetCode?" 
+            class="p-2.5 min-h-[42px] min-w-[42px] flex items-center justify-center text-slate-400 hover:text-white rounded-xl bg-slate-900 border border-white/10 hover:border-white/20 transition-all text-xs active:scale-95"
+          >
+            <i data-lucide="sliders-horizontal" class="w-4 h-4"></i>
+          </button>
+
+          <!-- Trace Action Button -->
+          <button 
+            id="trackBtn" 
+            class="flex items-center justify-center gap-1.5 px-4 py-2 min-h-[42px] text-xs md:text-sm font-semibold rounded-xl bg-gradient-to-r from-blue-600 via-indigo-600 to-amber-600 hover:from-blue-500 hover:to-amber-500 text-white shadow-lg shadow-indigo-500/25 transition-all transform active:scale-95"
+          >
+            <i data-lucide="sparkles" class="w-3.5 h-3.5"></i>
+            <span>Trace</span>
+          </button>
+
+          <!-- Refresh Button -->
+          <button 
+            id="refreshBtn" 
+            title="Force Refresh Data"
+            class="p-2.5 min-h-[42px] min-w-[42px] flex items-center justify-center text-slate-400 hover:text-white rounded-xl bg-slate-900 border border-white/10 hover:border-white/20 transition-all active:scale-95"
+          >
+            <i data-lucide="refresh-cw" class="w-4 h-4"></i>
+          </button>
+
+          <!-- Share / Copy Link Button -->
+          <button 
+            id="shareLinkBtn" 
+            title="Copy direct shareable profile link"
+            class="p-2.5 min-h-[42px] min-w-[42px] flex items-center justify-center text-slate-400 hover:text-white rounded-xl bg-slate-900 border border-white/10 hover:border-white/20 transition-all active:scale-95"
+          >
+            <i data-lucide="share-2" class="w-4 h-4"></i>
+          </button>
+
+          <!-- Theme Toggle Button & Dropdown Menu (Light, Dark, System) -->
+          <div class="relative">
+            <button 
+              id="themeToggleBtn" 
+              title="Theme settings (Light, Dark, System)"
+              aria-label="Toggle Theme Menu"
+              aria-haspopup="true"
+              aria-expanded="false"
+              class="p-2.5 min-h-[42px] min-w-[42px] flex items-center justify-center text-slate-400 hover:text-white rounded-xl bg-slate-900 border border-white/10 hover:border-white/20 transition-all active:scale-95"
+            >
+              <i id="themeToggleIcon" data-lucide="moon" class="w-4 h-4"></i>
+            </button>
+
+            <!-- Theme Dropdown Popover -->
+            <div 
+              id="themeDropdown" 
+              class="hidden absolute right-0 mt-2 w-44 rounded-2xl p-1.5 shadow-2xl z-50 transition-all duration-200 border theme-dropdown-menu"
+              role="menu"
+            >
+              <button 
+                data-theme-value="light" 
+                class="theme-option w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-medium transition-all"
+                role="menuitem"
+              >
+                <div class="flex items-center gap-2.5">
+                  <i data-lucide="sun" class="w-4 h-4 text-amber-500"></i>
+                  <span>Light</span>
+                </div>
+                <i data-lucide="check" class="w-3.5 h-3.5 check-icon text-indigo-500 hidden"></i>
+              </button>
+              <button 
+                data-theme-value="dark" 
+                class="theme-option w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-medium transition-all"
+                role="menuitem"
+              >
+                <div class="flex items-center gap-2.5">
+                  <i data-lucide="moon" class="w-4 h-4 text-indigo-400"></i>
+                  <span>Dark</span>
+                </div>
+                <i data-lucide="check" class="w-3.5 h-3.5 check-icon text-indigo-500 hidden"></i>
+              </button>
+              <button 
+                data-theme-value="system" 
+                class="theme-option w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-medium transition-all"
+                role="menuitem"
+              >
+                <div class="flex items-center gap-2.5">
+                  <i data-lucide="laptop" class="w-4 h-4 text-emerald-400"></i>
+                  <span>System</span>
+                </div>
+                <i data-lucide="check" class="w-3.5 h-3.5 check-icon text-indigo-500 hidden"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Quick Presets & History Bar -->
+    <div class="max-w-7xl mx-auto mt-2 pt-2 border-t border-white/5 flex items-center justify-between text-xs text-slate-400 overflow-x-auto no-scrollbar gap-3 py-1">
+      <div class="flex items-center gap-1.5 shrink-0">
+        <span class="text-[11px] text-slate-500 uppercase tracking-wider font-semibold whitespace-nowrap">Try User:</span>
+        <button class="preset-btn px-2.5 py-1.5 min-h-[36px] rounded-lg bg-slate-800/80 hover:bg-slate-700 text-slate-200 border border-white/5 font-mono text-xs whitespace-nowrap active:scale-95" data-username="tourist">
+          tourist
+        </button>
+        <button class="preset-btn px-2.5 py-1.5 min-h-[36px] rounded-lg bg-slate-800/80 hover:bg-slate-700 text-slate-200 border border-white/5 font-mono text-xs whitespace-nowrap active:scale-95" data-username="neal_wu">
+          neal_wu
+        </button>
+        <button class="preset-btn px-2.5 py-1.5 min-h-[36px] rounded-lg bg-slate-800/80 hover:bg-slate-700 text-slate-200 border border-white/5 font-mono text-xs whitespace-nowrap active:scale-95" data-username="Benq">
+          Benq
+        </button>
+        <button class="preset-btn px-2.5 py-1.5 min-h-[36px] rounded-lg bg-slate-800/80 hover:bg-slate-700 text-slate-200 border border-white/5 font-mono text-xs whitespace-nowrap active:scale-95" data-username="Petr">
+          Petr
+        </button>
+        <button class="preset-btn px-2.5 py-1.5 min-h-[36px] rounded-lg bg-slate-800/80 hover:bg-slate-700 text-slate-200 border border-white/5 font-mono text-xs whitespace-nowrap active:scale-95" data-username="Errichto">
+          Errichto
+        </button>
+      </div>
+
+      <!-- Quick Recent Switcher -->
+      <div id="historyPills" class="flex items-center gap-1.5 shrink-0">
+        <!-- Rendered by JS -->
+      </div>
+    </div>
+  </header>
+
+  <!-- MAIN CONTAINER -->
+  <main class="max-w-7xl mx-auto px-4 lg:px-8 py-6 space-y-6">
+
+    <!-- COPY LINK NOTIFICATION TOAST -->
+    <div id="toastNotification" class="fixed bottom-6 right-6 z-50 hidden rounded-xl bg-slate-900 border border-emerald-500/40 text-emerald-300 px-4 py-3 text-xs shadow-2xl flex items-center gap-2 transform transition-all">
+      <i data-lucide="check" class="w-4 h-4 text-emerald-400"></i>
+      <span id="toastMessage">Profile link copied to clipboard!</span>
+    </div>
+
+    <!-- GLOBAL NOTIFICATION BANNER / STATUS -->
+    <div id="alertBanner" class="hidden rounded-xl p-4 border text-sm flex items-start justify-between gap-3">
+      <div class="flex items-center gap-3">
+        <i id="alertIcon" data-lucide="alert-circle" class="w-5 h-5 flex-shrink-0"></i>
+        <div id="alertMessage" class="font-medium"></div>
+      </div>
+      <button id="alertClose" class="text-slate-400 hover:text-white">
+        <i data-lucide="x" class="w-4 h-4"></i>
+      </button>
+    </div>
+
+    <!-- CURRENTLY TRACED USER BADGE & SHARE BAR -->
+    <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 bg-slate-900/60 border border-white/5 px-4 py-2.5 rounded-xl">
+      <div class="flex flex-wrap items-center gap-2 text-xs">
+        <span class="text-slate-400">Tracing Performance For:</span>
+        <span id="currentTracedBadge" class="font-mono font-bold text-white px-2.5 py-0.5 rounded bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">--</span>
+        <span id="currentStatusIndicators" class="flex items-center gap-1.5 ml-1">
+          <!-- CF and LC status icons rendered by JS -->
+        </span>
+      </div>
+      <button id="shareBannerBtn" class="w-full sm:w-auto flex items-center justify-center gap-1.5 px-3 py-2 min-h-[38px] rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white text-xs border border-white/10 transition-all active:scale-95">
+        <i data-lucide="link" class="w-3.5 h-3.5"></i>
+        <span>Copy Shareable Link</span>
+      </button>
+    </div>
+
+    <!-- TABS BAR -->
+    <nav class="flex items-center gap-2 border-b border-white/10 pb-2 overflow-x-auto no-scrollbar scroll-smooth">
+      <button class="tab-btn active flex items-center gap-2 px-3.5 sm:px-4 py-2 min-h-[42px] whitespace-nowrap text-xs md:text-sm font-semibold rounded-lg bg-indigo-600/20 text-indigo-300 border border-indigo-500/30 transition-all shrink-0" data-tab="overviewTab">
+        <i data-lucide="layout-dashboard" class="w-4 h-4"></i>
+        <span>Overview</span>
+      </button>
+      <button class="tab-btn flex items-center gap-2 px-3.5 sm:px-4 py-2 min-h-[42px] whitespace-nowrap text-xs md:text-sm font-medium rounded-lg text-slate-400 hover:text-slate-200 hover:bg-white/5 transition-all shrink-0" data-tab="cfTab">
+        <i data-lucide="terminal" class="w-4 h-4 text-blue-400"></i>
+        <span>Codeforces</span>
+      </button>
+      <button class="tab-btn flex items-center gap-2 px-3.5 sm:px-4 py-2 min-h-[42px] whitespace-nowrap text-xs md:text-sm font-medium rounded-lg text-slate-400 hover:text-slate-200 hover:bg-white/5 transition-all shrink-0" data-tab="lcTab">
+        <i data-lucide="code" class="w-4 h-4 text-amber-400"></i>
+        <span>LeetCode</span>
+      </button>
+      <button class="tab-btn flex items-center gap-2 px-3.5 sm:px-4 py-2 min-h-[42px] whitespace-nowrap text-xs md:text-sm font-medium rounded-lg text-slate-400 hover:text-slate-200 hover:bg-white/5 transition-all shrink-0" data-tab="contestsTab">
+        <i data-lucide="calendar" class="w-4 h-4 text-emerald-400"></i>
+        <span>Contests Calendar</span>
+        <span id="upcomingCountBadge" class="ml-1 px-1.5 py-0.2 text-[10px] font-bold rounded-full bg-emerald-500/20 text-emerald-300">0</span>
+      </button>
+      <button class="tab-btn flex items-center gap-2 px-3.5 sm:px-4 py-2 min-h-[42px] whitespace-nowrap text-xs md:text-sm font-medium rounded-lg text-slate-400 hover:text-slate-200 hover:bg-white/5 transition-all shrink-0" data-tab="compareTab">
+        <i data-lucide="scale" class="w-4 h-4 text-purple-400"></i>
+        <span>Compare Coders</span>
+      </button>
+    </nav>
+
+    <!-- ======================================================== -->
+    <!-- TAB 1: OVERVIEW -->
+    <!-- ======================================================== -->
+    <div id="overviewTab" class="tab-content space-y-6">
+
+      <!-- NEXT CONTEST HERO BANNER -->
+      <div id="nextContestBanner" class="glass-card relative overflow-hidden p-4 sm:p-6 bg-gradient-to-r from-blue-950/40 via-indigo-950/40 to-amber-950/30 border border-indigo-500/20">
+        <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-5 sm:gap-6">
+          <div class="space-y-2">
+            <div class="flex items-center gap-2">
+              <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                <span class="w-2 h-2 rounded-full bg-emerald-400 pulse-indicator"></span>
+                Next Upcoming Contest
+              </span>
+              <span id="nextContestPlatform" class="px-2 py-0.5 rounded text-xs font-semibold bg-white/10 text-slate-300">Loading...</span>
+            </div>
+            <h2 id="nextContestTitle" class="text-lg sm:text-xl md:text-2xl font-bold text-white tracking-tight">Fetching upcoming contests...</h2>
+            <p id="nextContestTime" class="text-xs md:text-sm text-slate-300 flex items-center gap-2">
+              <i data-lucide="clock" class="w-4 h-4 text-slate-400 shrink-0"></i>
+              <span>--</span>
+            </p>
+          </div>
+
+          <!-- Live Countdown Timer -->
+          <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full lg:w-auto">
+            <div class="grid grid-cols-4 gap-2 w-full sm:w-auto">
+              <div class="text-center p-2.5 sm:p-3 rounded-xl bg-slate-900/80 border border-white/10 min-w-0 sm:min-w-[68px]">
+                <span id="countdownDays" class="text-xl sm:text-2xl font-bold font-mono text-white">00</span>
+                <p class="text-[9px] sm:text-[10px] text-slate-400 uppercase font-semibold">Days</p>
+              </div>
+              <div class="text-center p-2.5 sm:p-3 rounded-xl bg-slate-900/80 border border-white/10 min-w-0 sm:min-w-[68px]">
+                <span id="countdownHours" class="text-xl sm:text-2xl font-bold font-mono text-white">00</span>
+                <p class="text-[9px] sm:text-[10px] text-slate-400 uppercase font-semibold">Hours</p>
+              </div>
+              <div class="text-center p-2.5 sm:p-3 rounded-xl bg-slate-900/80 border border-white/10 min-w-0 sm:min-w-[68px]">
+                <span id="countdownMins" class="text-xl sm:text-2xl font-bold font-mono text-white">00</span>
+                <p class="text-[9px] sm:text-[10px] text-slate-400 uppercase font-semibold">Mins</p>
+              </div>
+              <div class="text-center p-2.5 sm:p-3 rounded-xl bg-slate-900/80 border border-white/10 min-w-0 sm:min-w-[68px]">
+                <span id="countdownSecs" class="text-xl sm:text-2xl font-bold font-mono text-indigo-400">00</span>
+                <p class="text-[9px] sm:text-[10px] text-slate-400 uppercase font-semibold">Secs</p>
+              </div>
+            </div>
+
+            <a id="nextContestRegisterBtn" href="#" target="_blank" rel="noopener noreferrer" class="w-full sm:w-auto justify-center px-4 py-3 min-h-[44px] rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs flex items-center gap-2 shadow-lg shadow-indigo-600/30 transition-all active:scale-[0.98]">
+              <span>Register</span>
+              <i data-lucide="external-link" class="w-4 h-4"></i>
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <!-- DUAL PLATFORM HERO CARDS -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
+
+        <!-- CODEFORCES CARD -->
+        <div id="overviewCfCard" class="glass-card p-4 sm:p-6 border-l-4 border-l-blue-500 space-y-4">
+          <div class="flex items-start justify-between gap-3">
+            <div class="flex items-center gap-3 min-w-0">
+              <img id="overviewCfAvatar" src="/api/cf/avatar/default" alt="CF Avatar" referrerpolicy="no-referrer" class="w-12 h-12 sm:w-14 sm:h-14 rounded-full border-2 border-blue-500/40 object-cover bg-slate-800 shrink-0" />
+              <div class="min-w-0">
+                <div class="flex flex-wrap items-center gap-1.5 sm:gap-2">
+                  <h3 id="overviewCfHandle" class="text-base sm:text-lg font-bold text-white font-mono truncate">--</h3>
+                  <span id="overviewCfRankBadge" class="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-slate-800 text-slate-300">--</span>
+                </div>
+                <p id="overviewCfOrg" class="text-xs text-slate-400 truncate">Organization / Country</p>
+              </div>
+            </div>
+            <div class="text-right shrink-0">
+              <span class="text-xs text-slate-400 block">CF Rating</span>
+              <span id="overviewCfRating" class="text-xl sm:text-2xl font-bold font-mono text-blue-400">--</span>
+              <span id="overviewCfMaxRating" class="text-[10px] sm:text-[11px] text-slate-500 block">Max: --</span>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-3 gap-2 pt-2 border-t border-white/5">
+            <div class="bg-slate-900/60 p-2 sm:p-2.5 rounded-lg text-center">
+              <span class="text-[9px] sm:text-[10px] text-slate-400 uppercase block font-semibold">Problems Solved</span>
+              <span id="overviewCfSolved" class="text-base sm:text-lg font-bold font-mono text-white">--</span>
+            </div>
+            <div class="bg-slate-900/60 p-2 sm:p-2.5 rounded-lg text-center">
+              <span class="text-[9px] sm:text-[10px] text-slate-400 uppercase block font-semibold">Contests</span>
+              <span id="overviewCfContests" class="text-base sm:text-lg font-bold font-mono text-white">--</span>
+            </div>
+            <div class="bg-slate-900/60 p-2 sm:p-2.5 rounded-lg text-center">
+              <span class="text-[9px] sm:text-[10px] text-slate-400 uppercase block font-semibold">Contribution</span>
+              <span id="overviewCfContrib" class="text-base sm:text-lg font-bold font-mono text-white">--</span>
+            </div>
+          </div>
+
+          <!-- CF Streak Highlights Row -->
+          <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2 px-3 py-2.5 rounded-xl bg-slate-900/80 border border-white/5 text-xs">
+            <div class="flex items-center gap-2">
+              <span class="flex items-center justify-center w-7 h-7 rounded-lg bg-amber-500/10 text-amber-400 border border-amber-500/20 shrink-0">
+                <i data-lucide="flame" class="w-4 h-4"></i>
+              </span>
+              <div>
+                <span class="text-[10px] text-slate-400 block leading-tight">Current Streak</span>
+                <span id="overviewCfCurrentStreak" class="font-mono font-bold text-amber-400">0 days</span>
+              </div>
+            </div>
+            <div class="hidden sm:block h-6 w-px bg-white/10"></div>
+            <div class="flex items-center gap-2">
+              <span class="flex items-center justify-center w-7 h-7 rounded-lg bg-orange-500/10 text-orange-400 border border-orange-500/20 shrink-0">
+                <i data-lucide="zap" class="w-4 h-4"></i>
+              </span>
+              <div>
+                <span class="text-[10px] text-slate-400 block leading-tight">Max Streak</span>
+                <span id="overviewCfMaxStreak" class="font-mono font-bold text-orange-400">0 days</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- LEETCODE CARD -->
+        <div id="overviewLcCard" class="glass-card p-4 sm:p-6 border-l-4 border-l-amber-500 space-y-4">
+          <div class="flex items-start justify-between gap-3">
+            <div class="flex items-center gap-3 min-w-0">
+              <img id="overviewLcAvatar" src="/api/lc/avatar/default" alt="LC Avatar" referrerpolicy="no-referrer" class="w-12 h-12 sm:w-14 sm:h-14 rounded-full border-2 border-amber-500/40 object-cover bg-slate-800 shrink-0" />
+              <div class="min-w-0">
+                <div class="flex flex-wrap items-center gap-1.5 sm:gap-2">
+                  <h3 id="overviewLcHandle" class="text-base sm:text-lg font-bold text-white font-mono truncate">--</h3>
+                  <span id="overviewLcBadge" class="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-slate-800 text-slate-300">--</span>
+                </div>
+                <p id="overviewLcRank" class="text-xs text-slate-400 truncate">Global Ranking: --</p>
+              </div>
+            </div>
+            <div class="text-right shrink-0">
+              <span class="text-xs text-slate-400 block">Contest Rating</span>
+              <span id="overviewLcRating" class="text-xl sm:text-2xl font-bold font-mono text-amber-400">--</span>
+              <span id="overviewLcTopPercent" class="text-[10px] sm:text-[11px] text-slate-500 block">Top --%</span>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-2 border-t border-white/5">
+            <div class="bg-slate-900/60 p-2 sm:p-2.5 rounded-lg text-center">
+              <span class="text-[9px] sm:text-[10px] text-slate-400 uppercase block font-semibold">Total Solved</span>
+              <span id="overviewLcTotal" class="text-base sm:text-lg font-bold font-mono text-white">--</span>
+            </div>
+            <div class="bg-slate-900/60 p-2 sm:p-2.5 rounded-lg text-center">
+              <span class="text-[9px] sm:text-[10px] text-emerald-400 uppercase block font-semibold">Easy</span>
+              <span id="overviewLcEasy" class="text-base sm:text-lg font-bold font-mono text-emerald-400">--</span>
+            </div>
+            <div class="bg-slate-900/60 p-2 sm:p-2.5 rounded-lg text-center">
+              <span class="text-[9px] sm:text-[10px] text-amber-400 uppercase block font-semibold">Medium</span>
+              <span id="overviewLcMedium" class="text-base sm:text-lg font-bold font-mono text-amber-400">--</span>
+            </div>
+            <div class="bg-slate-900/60 p-2 sm:p-2.5 rounded-lg text-center">
+              <span class="text-[9px] sm:text-[10px] text-rose-400 uppercase block font-semibold">Hard</span>
+              <span id="overviewLcHard" class="text-base sm:text-lg font-bold font-mono text-rose-400">--</span>
+            </div>
+          </div>
+
+          <!-- LC Streak Highlights Row -->
+          <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2 px-3 py-2.5 rounded-xl bg-slate-900/80 border border-white/5 text-xs">
+            <div class="flex items-center gap-2">
+              <span class="flex items-center justify-center w-7 h-7 rounded-lg bg-amber-500/10 text-amber-400 border border-amber-500/20 shrink-0">
+                <i data-lucide="flame" class="w-4 h-4"></i>
+              </span>
+              <div>
+                <span class="text-[10px] text-slate-400 block leading-tight">Current Streak</span>
+                <span id="overviewLcCurrentStreak" class="font-mono font-bold text-amber-400">0 days</span>
+              </div>
+            </div>
+            <div class="hidden sm:block h-6 w-px bg-white/10"></div>
+            <div class="flex items-center gap-2">
+              <span class="flex items-center justify-center w-7 h-7 rounded-lg bg-orange-500/10 text-orange-400 border border-orange-500/20 shrink-0">
+                <i data-lucide="zap" class="w-4 h-4"></i>
+              </span>
+              <div>
+                <span class="text-[10px] text-slate-400 block leading-tight">Max Streak</span>
+                <span id="overviewLcMaxStreak" class="font-mono font-bold text-orange-400">0 days</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- COMBINED SUMMARY MATRIX -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+        <div class="glass-card p-3.5 sm:p-4 flex items-center gap-3 sm:gap-4">
+          <div class="p-3 rounded-xl bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 shrink-0">
+            <i data-lucide="check-circle-2" class="w-5 h-5 sm:w-6 sm:h-6"></i>
+          </div>
+          <div class="min-w-0">
+            <span class="text-xs text-slate-400 block truncate">Total Solved (Combined)</span>
+            <h4 id="combinedTotalSolved" class="text-xl sm:text-2xl font-bold font-mono text-white">--</h4>
+          </div>
+        </div>
+
+        <div class="glass-card p-3.5 sm:p-4 flex items-center gap-3 sm:gap-4">
+          <div class="p-3 rounded-xl bg-blue-500/10 text-blue-400 border border-blue-500/20 shrink-0">
+            <i data-lucide="trophy" class="w-5 h-5 sm:w-6 sm:h-6"></i>
+          </div>
+          <div class="min-w-0">
+            <span class="text-xs text-slate-400 block truncate">Peak Ratings</span>
+            <div class="flex items-center gap-2 text-xs sm:text-sm font-mono font-bold">
+              <span id="combinedCfPeak" class="text-blue-400">CF: --</span>
+              <span class="text-slate-600">|</span>
+              <span id="combinedLcPeak" class="text-amber-400">LC: --</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="glass-card p-3.5 sm:p-4 flex items-center gap-3 sm:gap-4">
+          <div class="p-3 rounded-xl bg-amber-500/10 text-amber-400 border border-amber-500/20 shrink-0">
+            <i data-lucide="flame" class="w-5 h-5 sm:w-6 sm:h-6"></i>
+          </div>
+          <div class="min-w-0">
+            <span class="text-xs text-slate-400 block truncate">Contests Attended</span>
+            <h4 id="combinedContestsTotal" class="text-xl sm:text-2xl font-bold font-mono text-white">--</h4>
+          </div>
+        </div>
+
+        <div class="glass-card p-3.5 sm:p-4 flex items-center gap-3 sm:gap-4">
+          <div class="p-3 rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 shrink-0">
+            <i data-lucide="percent" class="w-5 h-5 sm:w-6 sm:h-6"></i>
+          </div>
+          <div class="min-w-0">
+            <span class="text-xs text-slate-400 block truncate">LC Acceptance Rate</span>
+            <h4 id="combinedAcceptanceRate" class="text-xl sm:text-2xl font-bold font-mono text-emerald-400">--%</h4>
+          </div>
+        </div>
+      </div>
+
+      <!-- RECENT ACTIVITY SNAPSHOT -->
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <!-- CF Recent Submissions -->
+        <div class="glass-card p-5 space-y-3">
+          <div class="flex items-center justify-between">
+            <h4 class="text-sm font-bold text-white flex items-center gap-2">
+              <i data-lucide="terminal" class="w-4 h-4 text-blue-400"></i>
+              <span>Recent Codeforces Submissions</span>
+            </h4>
+            <span class="text-xs text-slate-400">Latest Verdicts</span>
+          </div>
+          <div id="overviewCfRecentList" class="space-y-2 max-h-60 overflow-y-auto pr-1">
+            <p class="text-xs text-slate-500">Track a profile to view submissions.</p>
+          </div>
+        </div>
+
+        <!-- LC Recent Submissions -->
+        <div class="glass-card p-5 space-y-3">
+          <div class="flex items-center justify-between">
+            <h4 class="text-sm font-bold text-white flex items-center gap-2">
+              <i data-lucide="code" class="w-4 h-4 text-amber-400"></i>
+              <span>Recent LeetCode Solved</span>
+            </h4>
+            <span class="text-xs text-slate-400">Accepted Only</span>
+          </div>
+          <div id="overviewLcRecentList" class="space-y-2 max-h-60 overflow-y-auto pr-1">
+            <p class="text-xs text-slate-500">Track a profile to view submissions.</p>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ======================================================== -->
+    <!-- TAB 2: CODEFORCES DEEP-DIVE -->
+    <!-- ======================================================== -->
+    <div id="cfTab" class="tab-content hidden space-y-6">
+
+      <!-- Profile Header Banner -->
+      <div class="glass-card p-4 sm:p-6 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-5 sm:gap-6 border-t-4 border-t-blue-500">
+        <div class="flex items-center gap-3 sm:gap-4 min-w-0">
+          <img id="cfDetailAvatar" src="/api/cf/avatar/default" alt="CF Avatar" referrerpolicy="no-referrer" class="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl border-2 border-blue-500/30 object-cover bg-slate-800 shrink-0" />
+          <div class="space-y-1 min-w-0">
+            <div class="flex flex-wrap items-center gap-2 sm:gap-3">
+              <h2 id="cfDetailHandle" class="text-xl sm:text-2xl font-bold text-white font-mono truncate">--</h2>
+              <span id="cfDetailRank" class="px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider bg-slate-800 text-slate-300">--</span>
+            </div>
+            <p id="cfDetailMeta" class="text-xs text-slate-400 truncate">--</p>
+            <div class="flex flex-wrap items-center gap-3 sm:gap-4 text-xs text-slate-400 pt-1">
+              <span>Friends: <strong id="cfDetailFriends" class="text-slate-200">--</strong></span>
+              <span>Contribution: <strong id="cfDetailContrib" class="text-slate-200">--</strong></span>
+            </div>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3 w-full lg:w-auto">
+          <div class="text-center p-2.5 sm:p-3 rounded-xl bg-slate-900/80 border border-white/5 min-w-0 sm:min-w-[90px]">
+            <span class="text-xs text-slate-400 block font-semibold">Current Rating</span>
+            <span id="cfDetailRating" class="text-lg sm:text-xl font-bold font-mono text-blue-400">--</span>
+          </div>
+          <div class="text-center p-2.5 sm:p-3 rounded-xl bg-slate-900/80 border border-white/5 min-w-0 sm:min-w-[90px]">
+            <span class="text-xs text-slate-400 block font-semibold">Max Rating</span>
+            <span id="cfDetailMaxRating" class="text-lg sm:text-xl font-bold font-mono text-amber-400">--</span>
+            <span id="cfDetailMaxRank" class="text-[10px] text-slate-500 block truncate">--</span>
+          </div>
+          <div class="text-center p-2.5 sm:p-3 rounded-xl bg-slate-900/80 border border-white/5 min-w-0 sm:min-w-[90px]">
+            <span class="text-xs text-amber-400 block font-semibold flex items-center justify-center gap-1">
+              <i data-lucide="flame" class="w-3.5 h-3.5"></i> Streak
+            </span>
+            <span id="cfDetailCurrentStreak" class="text-lg sm:text-xl font-bold font-mono text-amber-400">0d</span>
+          </div>
+          <div class="text-center p-2.5 sm:p-3 rounded-xl bg-slate-900/80 border border-white/5 min-w-0 sm:min-w-[90px]">
+            <span class="text-xs text-orange-400 block font-semibold flex items-center justify-center gap-1">
+              <i data-lucide="zap" class="w-3.5 h-3.5"></i> Max
+            </span>
+            <span id="cfDetailMaxStreak" class="text-lg sm:text-xl font-bold font-mono text-orange-400">0d</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Rating History Timeline Chart -->
+      <div class="glass-card p-4 sm:p-6 space-y-4">
+        <div class="flex items-center justify-between">
+          <div>
+            <h3 class="text-base font-bold text-white flex items-center gap-2">
+              <i data-lucide="trending-up" class="w-5 h-5 text-blue-400"></i>
+              <span>Codeforces Rating History</span>
+            </h3>
+            <p class="text-xs text-slate-400">Rating progression across all attended contests</p>
+          </div>
+          <span id="cfContestsCount" class="text-xs font-mono font-semibold text-slate-300 bg-slate-800 px-2.5 py-1 rounded-lg">0 Contests</span>
+        </div>
+        <div class="w-full h-72">
+          <canvas id="cfRatingChart"></canvas>
+        </div>
+      </div>
+
+      <!-- Solved Problem Analytics (Histogram & Top Tags) -->
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+        <!-- Problem Rating Distribution Histogram -->
+        <div class="glass-card p-4 sm:p-6 space-y-4">
+          <div class="flex items-center justify-between">
+            <h3 class="text-sm font-bold text-white flex items-center gap-2">
+              <i data-lucide="bar-chart-3" class="w-4 h-4 text-indigo-400"></i>
+              <span>Solved Problem Difficulty (Rating)</span>
+            </h3>
+            <span class="text-xs text-slate-400">800 - 3500+</span>
+          </div>
+          <div class="w-full h-64">
+            <canvas id="cfDifficultyChart"></canvas>
+          </div>
+        </div>
+
+        <!-- Problem Tags Cloud / Bar Chart -->
+        <div class="glass-card p-4 sm:p-6 space-y-4">
+          <div class="flex items-center justify-between">
+            <h3 class="text-sm font-bold text-white flex items-center gap-2">
+              <i data-lucide="tag" class="w-4 h-4 text-emerald-400"></i>
+              <span>Top Problem Topics / Tags</span>
+            </h3>
+            <span class="text-xs text-slate-400">By Solved Count</span>
+          </div>
+          <div class="w-full h-64">
+            <canvas id="cfTagsChart"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- Submissions Table -->
+      <div class="glass-card p-4 sm:p-6 space-y-4">
+        <h3 class="text-base font-bold text-white flex items-center gap-2">
+          <i data-lucide="list" class="w-5 h-5 text-blue-400"></i>
+          <span>Recent Submissions Feed</span>
+        </h3>
+        <div class="table-scroll-wrapper">
+          <table class="modern-table min-w-[640px]" id="cfSubmissionsTable">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Problem</th>
+                <th>Rating</th>
+                <th>Verdict</th>
+                <th>Language</th>
+                <th>Time / Memory</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="cfSubmissionsBody">
+              <tr>
+                <td colspan="7" class="text-center text-slate-500 py-6">No submission data loaded yet.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ======================================================== -->
+    <!-- TAB 3: LEETCODE DEEP-DIVE -->
+    <!-- ======================================================== -->
+    <div id="lcTab" class="tab-content hidden space-y-6">
+
+      <!-- Profile Header Banner -->
+      <div class="glass-card p-4 sm:p-6 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-5 sm:gap-6 border-t-4 border-t-amber-500">
+        <div class="flex items-center gap-3 sm:gap-4 min-w-0">
+          <img id="lcDetailAvatar" src="/api/lc/avatar/default" alt="LC Avatar" referrerpolicy="no-referrer" class="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl border-2 border-amber-500/30 object-cover bg-slate-800 shrink-0" />
+          <div class="space-y-1 min-w-0">
+            <div class="flex flex-wrap items-center gap-2 sm:gap-3">
+              <h2 id="lcDetailUsername" class="text-xl sm:text-2xl font-bold text-white font-mono truncate">--</h2>
+              <span id="lcDetailBadge" class="px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider bg-slate-800 text-slate-300">--</span>
+            </div>
+            <p id="lcDetailName" class="text-xs text-slate-400 truncate">--</p>
+            <div class="flex flex-wrap items-center gap-3 sm:gap-4 text-xs text-slate-400 pt-1">
+              <span>Global Rank: <strong id="lcDetailRank" class="text-slate-200">--</strong></span>
+              <span>Reputation: <strong id="lcDetailRep" class="text-slate-200">--</strong></span>
+            </div>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3 w-full lg:w-auto">
+          <div class="text-center p-2.5 sm:p-3 rounded-xl bg-slate-900/80 border border-white/5 min-w-0 sm:min-w-[90px]">
+            <span class="text-xs text-slate-400 block font-semibold">Contest Rating</span>
+            <span id="lcDetailRating" class="text-lg sm:text-xl font-bold font-mono text-amber-400">--</span>
+          </div>
+          <div class="text-center p-2.5 sm:p-3 rounded-xl bg-slate-900/80 border border-white/5 min-w-0 sm:min-w-[90px]">
+            <span class="text-xs text-slate-400 block font-semibold">Global Standing</span>
+            <span id="lcDetailTopPercent" class="text-lg sm:text-xl font-bold font-mono text-emerald-400">Top --%</span>
+            <span id="lcDetailAttended" class="text-[10px] text-slate-500 block truncate">-- contests</span>
+          </div>
+          <div class="text-center p-2.5 sm:p-3 rounded-xl bg-slate-900/80 border border-white/5 min-w-0 sm:min-w-[90px]">
+            <span class="text-xs text-amber-400 block font-semibold flex items-center justify-center gap-1">
+              <i data-lucide="flame" class="w-3.5 h-3.5"></i> Streak
+            </span>
+            <span id="lcDetailCurrentStreak" class="text-lg sm:text-xl font-bold font-mono text-amber-400">0d</span>
+          </div>
+          <div class="text-center p-2.5 sm:p-3 rounded-xl bg-slate-900/80 border border-white/5 min-w-0 sm:min-w-[90px]">
+            <span class="text-xs text-orange-400 block font-semibold flex items-center justify-center gap-1">
+              <i data-lucide="zap" class="w-3.5 h-3.5"></i> Max
+            </span>
+            <span id="lcDetailMaxStreak" class="text-lg sm:text-xl font-bold font-mono text-orange-400">0d</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Problem Solved Analytics & Donut Breakdown -->
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
+        <!-- Donut Chart -->
+        <div class="glass-card p-4 sm:p-6 space-y-4">
+          <h3 class="text-sm font-bold text-white flex items-center gap-2">
+            <i data-lucide="pie-chart" class="w-4 h-4 text-amber-400"></i>
+            <span>Solved Breakdown</span>
+          </h3>
+          <div class="relative w-full h-56 flex items-center justify-center">
+            <canvas id="lcDifficultyDonut"></canvas>
+            <div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+              <span id="lcDonutTotal" class="text-2xl font-bold font-mono text-white">0</span>
+              <span class="text-[10px] text-slate-400 uppercase font-semibold">Solved</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Metrics Bars -->
+        <div class="glass-card p-4 sm:p-6 lg:col-span-2 space-y-5">
+          <div class="flex items-center justify-between">
+            <h3 class="text-sm font-bold text-white flex items-center gap-2">
+              <i data-lucide="sliders" class="w-4 h-4 text-indigo-400"></i>
+              <span>Category Solved Progress</span>
+            </h3>
+            <span id="lcTotalSubmissionsText" class="text-xs text-slate-400">-- Total Submissions</span>
+          </div>
+
+          <!-- Easy Bar -->
+          <div class="space-y-1.5">
+            <div class="flex items-center justify-between text-xs">
+              <span class="font-semibold text-emerald-400">Easy</span>
+              <span id="lcEasyCount" class="font-mono text-slate-200">0</span>
+            </div>
+            <div class="w-full bg-slate-800 rounded-full h-2.5 overflow-hidden">
+              <div id="lcEasyBar" class="bg-emerald-400 h-2.5 rounded-full transition-all duration-500" style="width: 0%"></div>
+            </div>
+          </div>
+
+          <!-- Medium Bar -->
+          <div class="space-y-1.5">
+            <div class="flex items-center justify-between text-xs">
+              <span class="font-semibold text-amber-400">Medium</span>
+              <span id="lcMediumCount" class="font-mono text-slate-200">0</span>
+            </div>
+            <div class="w-full bg-slate-800 rounded-full h-2.5 overflow-hidden">
+              <div id="lcMediumBar" class="bg-amber-400 h-2.5 rounded-full transition-all duration-500" style="width: 0%"></div>
+            </div>
+          </div>
+
+          <!-- Hard Bar -->
+          <div class="space-y-1.5">
+            <div class="flex items-center justify-between text-xs">
+              <span class="font-semibold text-rose-400">Hard</span>
+              <span id="lcHardCount" class="font-mono text-slate-200">0</span>
+            </div>
+            <div class="w-full bg-slate-800 rounded-full h-2.5 overflow-hidden">
+              <div id="lcHardBar" class="bg-rose-400 h-2.5 rounded-full transition-all duration-500" style="width: 0%"></div>
+            </div>
+          </div>
+
+          <!-- Acceptance Rate Metric Box -->
+          <div class="pt-3 border-t border-white/5 flex items-center justify-between text-xs text-slate-400">
+            <span>Overall Acceptance Rate</span>
+            <span id="lcAcceptanceRateBadge" class="font-mono font-bold text-white px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-300 border border-emerald-500/20">--%</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- LeetCode Contest Rating History -->
+      <div class="glass-card p-4 sm:p-6 space-y-4">
+        <div class="flex items-center justify-between">
+          <div>
+            <h3 class="text-base font-bold text-white flex items-center gap-2">
+              <i data-lucide="trending-up" class="w-5 h-5 text-amber-400"></i>
+              <span>LeetCode Contest Rating History</span>
+            </h3>
+            <p class="text-xs text-slate-400">Weekly and Biweekly contest performance trajectory</p>
+          </div>
+          <span id="lcContestHistoryCount" class="text-xs font-mono font-semibold text-slate-300 bg-slate-800 px-2.5 py-1 rounded-lg">0 Attended</span>
+        </div>
+        <div class="w-full h-72">
+          <canvas id="lcRatingChart"></canvas>
+        </div>
+      </div>
+
+      <!-- Recent AC Submissions List -->
+      <div class="glass-card p-4 sm:p-6 space-y-4">
+        <h3 class="text-base font-bold text-white flex items-center gap-2">
+          <i data-lucide="check-check" class="w-5 h-5 text-emerald-400"></i>
+          <span>Recent Accepted Questions</span>
+        </h3>
+        <div class="table-scroll-wrapper">
+          <table class="modern-table min-w-[500px]">
+            <thead>
+              <tr>
+                <th>Question Title</th>
+                <th>Solved Date / Time</th>
+                <th>Direct Link</th>
+              </tr>
+            </thead>
+            <tbody id="lcSubmissionsBody">
+              <tr>
+                <td colspan="3" class="text-center text-slate-500 py-6">No submissions loaded yet.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ======================================================== -->
+    <!-- TAB 4: CONTESTS CALENDAR -->
+    <!-- ======================================================== -->
+    <div id="contestsTab" class="tab-content hidden space-y-6">
+
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h2 class="text-xl font-bold text-white flex items-center gap-2">
+            <i data-lucide="calendar" class="w-6 h-6 text-emerald-400"></i>
+            <span>Upcoming Contests Schedule</span>
+          </h2>
+          <p class="text-xs text-slate-400">Live countdowns & one-click calendar sync for Codeforces & LeetCode</p>
+        </div>
+
+        <!-- Filter buttons -->
+        <div class="flex items-center gap-1.5 sm:gap-2 bg-slate-900/80 p-1 rounded-xl border border-white/5 overflow-x-auto no-scrollbar">
+          <button class="contest-filter active px-3 sm:px-3.5 py-1.5 min-h-[38px] rounded-lg text-xs font-semibold bg-indigo-600 text-white shrink-0" data-filter="all">All</button>
+          <button class="contest-filter px-3 sm:px-3.5 py-1.5 min-h-[38px] rounded-lg text-xs font-semibold text-slate-400 hover:text-white shrink-0" data-filter="Codeforces">Codeforces</button>
+          <button class="contest-filter px-3 sm:px-3.5 py-1.5 min-h-[38px] rounded-lg text-xs font-semibold text-slate-400 hover:text-white shrink-0" data-filter="LeetCode">LeetCode</button>
+        </div>
+      </div>
+
+      <!-- Contests Grid -->
+      <div id="contestsGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+        <!-- Rendered dynamically by JS -->
+      </div>
+
+    </div>
+
+    <!-- ======================================================== -->
+    <!-- TAB 5: COMPARE CODERS -->
+    <!-- ======================================================== -->
+    <div id="compareTab" class="tab-content hidden space-y-6">
+      
+      <div class="glass-card p-4 sm:p-6 space-y-4">
+        <h2 class="text-base sm:text-lg font-bold text-white flex items-center gap-2">
+          <i data-lucide="scale" class="w-5 h-5 text-purple-400"></i>
+          <span>Head-to-Head Coder Comparison</span>
+        </h2>
+        <p class="text-xs text-slate-400">Compare metrics, ratings, and questions solved between two competitive programmers.</p>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+          <!-- Coder 1 Input -->
+          <div class="p-3.5 sm:p-4 rounded-xl bg-slate-900/60 border border-blue-500/20 space-y-2.5">
+            <h4 class="text-xs font-bold uppercase text-blue-400">Coder 1 Username</h4>
+            <div class="flex gap-2">
+              <input type="text" id="cmp1Cf" placeholder="Username (e.g. tourist)" class="w-full p-2.5 min-h-[42px] text-xs rounded-lg bg-slate-800 border border-white/10 font-mono text-white focus:outline-none focus:border-blue-500" />
+            </div>
+          </div>
+
+          <!-- Coder 2 Input -->
+          <div class="p-3.5 sm:p-4 rounded-xl bg-slate-900/60 border border-purple-500/20 space-y-2.5">
+            <h4 class="text-xs font-bold uppercase text-purple-400">Coder 2 Username</h4>
+            <div class="flex gap-2">
+              <input type="text" id="cmp2Cf" placeholder="Username (e.g. Benq)" class="w-full p-2.5 min-h-[42px] text-xs rounded-lg bg-slate-800 border border-white/10 font-mono text-white focus:outline-none focus:border-purple-500" />
+            </div>
+          </div>
+        </div>
+
+        <button id="compareBtn" class="w-full sm:w-auto justify-center px-5 py-3 min-h-[44px] rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-semibold text-xs flex items-center gap-2 shadow-lg shadow-purple-600/30 transition-all active:scale-[0.98]">
+          <i data-lucide="arrow-right-left" class="w-4 h-4"></i>
+          <span>Compare Now</span>
+        </button>
+      </div>
+
+      <!-- Comparison Results Table -->
+      <div id="compareResultsCard" class="hidden glass-card p-4 sm:p-6 space-y-4">
+        <h3 class="text-base font-bold text-white">Comparison Matrix</h3>
+        <div class="table-scroll-wrapper">
+          <table class="modern-table min-w-[480px]" id="compareTable">
+            <thead>
+              <tr>
+                <th>Metric</th>
+                <th id="cmpCol1Header" class="text-blue-400 font-bold">Coder 1</th>
+                <th id="cmpCol2Header" class="text-purple-400 font-bold">Coder 2</th>
+                <th>Leader</th>
+              </tr>
+            </thead>
+            <tbody id="compareBody">
+              <!-- Rendered by JS -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+
+
+
+  </main>
+
+  <!-- FOOTER -->
+  <footer class="mt-16 border-t border-white/10 py-6 text-center text-xs text-slate-500">
+    <div class="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-3">
+      <p>CP Tracker &bull; Trace Codeforces & LeetCode performance simply by username</p>
+      <p class="flex items-center gap-2">
+        <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+        <span>Share any profile with <code class="text-indigo-400 font-mono">?u=username</code></span>
+      </p>
+    </div>
+  </footer>
+
+  <!-- Main JavaScript App -->
+  <script src="app.js"></script>
+</body>
+</html>

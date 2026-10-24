@@ -28,12 +28,13 @@ A unified, real-time analytics dashboard and competitive programming tracker for
   - **Top Topics / Tags Chart** (Dynamic Programming, Greedy, Math, Graphs, Data Structures, etc.).
   - Recent Submissions table showing problem rating, verdict (Accepted, WA, TLE), language, time, and memory.
 
-- **Upcoming Contests Calendar**:
+- **Upcoming Contests & In-App Registration**:
   - Aggregated schedule for Codeforces (Div. 1, Div. 2, Div. 3, Educational) and LeetCode (Weekly, Biweekly).
+  - **In-App Direct Contest Registration**: 1-click registration proxy from your dashboard using saved session cookies.
   - Live countdown timers for each contest.
-  - Direct contest registration links.
+  - Dedicated **"Registered"** filter tab and glowing status badges.
   - One-click **"Add to Google Calendar"** sync button.
-  - Filter by platform (All, Codeforces, LeetCode).
+  - Filter by platform (All, Registered, Codeforces, LeetCode).
 
 - **Head-to-Head Comparison**:
   - Compare two coders side-by-side across ratings, peak performance, and questions solved.

@@ -20,7 +20,13 @@ const state = {
     lcDonut: null,
     lcRating: null
   },
-  countdownTimer: null
+  countdownTimer: null,
+  registeredContestIds: JSON.parse(localStorage.getItem('registeredContestIds') || '[]'),
+  cfSessionCookie: localStorage.getItem('cfSessionCookie') || '',
+  lcSessionCookie: localStorage.getItem('lcSessionCookie') || '',
+  cfAccountHandle: localStorage.getItem('cfAccountHandle') || '',
+  lcAccountUsername: localStorage.getItem('lcAccountUsername') || '',
+  currentContestFilter: 'all'
 };
 
 // Rank Colors Mapping for Codeforces
@@ -526,6 +532,10 @@ function setupEventListeners() {
 
   // Compare Button
   document.getElementById('compareBtn').addEventListener('click', handleCompare);
+
+  // Contest Session Modal Listeners & Registered Badges
+  setupContestSessionModalListeners();
+  updateRegisteredBadges();
 
   // Window resize handler with debounce for responsive charts
   let resizeTimer;
@@ -1509,16 +1519,47 @@ function setupNextContestCountdown() {
   }
 
   const next = state.contests[0];
+  const isRegistered = state.registeredContestIds.includes(next.id);
+
+  // Update platform badge
   document.getElementById('nextContestPlatform').textContent = next.platform;
   document.getElementById('nextContestPlatform').className = `px-2 py-0.5 rounded text-xs font-semibold ${
     next.platform === 'Codeforces' ? 'bg-blue-500/20 text-blue-300' : 'bg-amber-500/20 text-amber-300'
   }`;
+
+  // Update registered status badge in banner
+  const regBadge = document.getElementById('nextContestRegisteredBadge');
+  if (regBadge) {
+    if (isRegistered) {
+      regBadge.classList.remove('hidden');
+      regBadge.classList.add('inline-flex');
+    } else {
+      regBadge.classList.add('hidden');
+      regBadge.classList.remove('inline-flex');
+    }
+  }
+
   document.getElementById('nextContestTitle').textContent = next.title;
   document.getElementById('nextContestTime').innerHTML = `
     <i data-lucide="clock" class="w-4 h-4 text-slate-400"></i>
     <span>${formatDateTime(next.startTime)} &bull; Duration: ${formatDuration(next.duration)}</span>
   `;
-  document.getElementById('nextContestRegisterBtn').href = next.url;
+
+  // Register button in banner
+  const regBtn = document.getElementById('nextContestRegisterBtn');
+  if (regBtn) {
+    if (isRegistered) {
+      regBtn.innerHTML = `<span>Registered ✓</span> <i data-lucide="check" class="w-4 h-4"></i>`;
+      regBtn.className = 'w-full sm:w-auto justify-center px-4 py-3 min-h-[44px] rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs flex items-center gap-2 shadow-lg shadow-emerald-600/30 transition-all active:scale-[0.98]';
+      regBtn.href = next.url;
+      regBtn.onclick = null;
+    } else {
+      regBtn.innerHTML = `<span>Register In-App</span> <i data-lucide="sparkles" class="w-4 h-4"></i>`;
+      regBtn.className = 'w-full sm:w-auto justify-center px-4 py-3 min-h-[44px] rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs flex items-center gap-2 shadow-lg shadow-indigo-600/30 transition-all active:scale-[0.98]';
+      regBtn.href = 'javascript:void(0)';
+      regBtn.onclick = () => handleRegisterContest(next.id);
+    }
+  }
 
   if (state.countdownTimer) clearInterval(state.countdownTimer);
 
@@ -1547,33 +1588,56 @@ function setupNextContestCountdown() {
 
   updateTicker();
   state.countdownTimer = setInterval(updateTicker, 1000);
+  if (window.lucide) lucide.createIcons();
 }
 
 function renderContests(filter = 'all') {
+  state.currentContestFilter = filter;
   const container = document.getElementById('contestsGrid');
   let list = state.contests;
 
-  if (filter !== 'all') {
+  if (filter === 'registered') {
+    list = list.filter(c => state.registeredContestIds.includes(c.id));
+  } else if (filter !== 'all') {
     list = list.filter(c => c.platform.toLowerCase() === filter.toLowerCase());
   }
 
+  updateRegisteredBadges();
+
   if (list.length === 0) {
-    container.innerHTML = `<div class="col-span-3 text-center py-12 text-slate-500">No upcoming ${filter} contests found.</div>`;
+    if (filter === 'registered') {
+      container.innerHTML = `
+        <div class="col-span-1 md:col-span-2 lg:col-span-3 text-center py-12 text-slate-400 glass-card p-8 space-y-3">
+          <div class="w-12 h-12 rounded-full bg-slate-800 flex items-center justify-center text-slate-400 mx-auto">
+            <i data-lucide="check-circle" class="w-6 h-6"></i>
+          </div>
+          <p class="font-bold text-white text-base">No registered contests found</p>
+          <p class="text-xs text-slate-400 max-w-sm mx-auto">Click <strong>Register In-App</strong> on any upcoming contest card to register directly from your dashboard!</p>
+        </div>
+      `;
+    } else {
+      container.innerHTML = `<div class="col-span-1 md:col-span-2 lg:col-span-3 text-center py-12 text-slate-500">No upcoming ${filter} contests found.</div>`;
+    }
+    if (window.lucide) lucide.createIcons();
     return;
   }
 
   container.innerHTML = list.map(c => {
     const isCf = c.platform === 'Codeforces';
+    const isReg = state.registeredContestIds.includes(c.id);
     const calUrl = generateGoogleCalendarUrl(c);
 
     return `
-      <div class="glass-card p-4 sm:p-6 flex flex-col justify-between space-y-4 border-t-2 ${isCf ? 'border-t-blue-500' : 'border-t-amber-500'}">
+      <div class="glass-card p-4 sm:p-6 flex flex-col justify-between space-y-4 border-t-2 ${isReg ? 'border-t-emerald-500 ring-1 ring-emerald-500/20' : (isCf ? 'border-t-blue-500' : 'border-t-amber-500')}">
         <div class="space-y-3">
           <div class="flex items-center justify-between">
             <span class="px-2.5 py-0.5 rounded text-xs font-semibold ${isCf ? 'bg-blue-500/10 text-blue-400 border border-blue-500/20' : 'bg-amber-500/10 text-amber-400 border border-amber-500/20'}">
               ${c.platform}
             </span>
-            <span class="text-xs text-slate-400 font-mono">${formatDuration(c.duration)}</span>
+            <div class="flex items-center gap-2">
+              ${isReg ? '<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 flex items-center gap-1"><i data-lucide="check" class="w-3 h-3"></i>Registered</span>' : ''}
+              <span class="text-xs text-slate-400 font-mono">${formatDuration(c.duration)}</span>
+            </div>
           </div>
 
           <h3 class="text-base font-bold text-white hover:text-indigo-400 transition-colors">
@@ -1589,9 +1653,23 @@ function renderContests(filter = 'all') {
         </div>
 
         <div class="pt-4 border-t border-white/5 flex items-center justify-between gap-2">
-          <a href="${c.url}" target="_blank" rel="noopener noreferrer" class="flex-1 py-2.5 min-h-[42px] flex items-center justify-center rounded-xl ${isCf ? 'bg-blue-600 hover:bg-blue-500' : 'bg-amber-600 hover:bg-amber-500'} text-white font-semibold text-xs shadow-md transition-all active:scale-[0.98]">
-            Register Contest
-          </a>
+          ${isReg ? `
+            <div class="flex-1 py-2.5 min-h-[42px] flex items-center justify-center gap-1.5 rounded-xl bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 text-xs font-bold shadow-md">
+              <i data-lucide="check-circle-2" class="w-4 h-4"></i>
+              <span>Registered</span>
+            </div>
+            <button onclick="handleUnregisterContest('${c.id}')" title="Remove from registered list" class="p-2.5 min-h-[42px] min-w-[42px] flex items-center justify-center rounded-xl bg-slate-800 hover:bg-rose-500/20 hover:text-rose-400 text-slate-400 border border-white/5 transition-all active:scale-95">
+              <i data-lucide="x" class="w-4 h-4"></i>
+            </button>
+          ` : `
+            <button onclick="handleRegisterContest('${c.id}')" id="regBtn_${c.id}" class="flex-1 py-2.5 min-h-[42px] flex items-center justify-center gap-1.5 rounded-xl ${isCf ? 'bg-blue-600 hover:bg-blue-500' : 'bg-amber-600 hover:bg-amber-500'} text-white font-semibold text-xs shadow-md transition-all active:scale-[0.98]">
+              <i data-lucide="sparkles" class="w-4 h-4"></i>
+              <span>Register In-App</span>
+            </button>
+            <a href="${c.url}" target="_blank" rel="noopener noreferrer" title="Direct registration page" class="p-2.5 min-h-[42px] min-w-[42px] flex items-center justify-center rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 border border-white/5 transition-all active:scale-95">
+              <i data-lucide="external-link" class="w-4 h-4"></i>
+            </a>
+          `}
           <a href="${calUrl}" target="_blank" rel="noopener noreferrer" title="Add to Google Calendar" class="p-2.5 min-h-[42px] min-w-[42px] flex items-center justify-center rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 border border-white/5 transition-all active:scale-95">
             <i data-lucide="calendar-plus" class="w-4 h-4"></i>
           </a>
@@ -1601,6 +1679,317 @@ function renderContests(filter = 'all') {
   }).join('');
 
   if (window.lucide) lucide.createIcons();
+}
+
+// --------------------------------------------------------
+// IN-APP CONTEST REGISTRATION LOGIC
+// --------------------------------------------------------
+async function handleRegisterContest(contestId) {
+  const contest = state.contests.find(c => c.id === contestId);
+  if (!contest) return;
+
+  const isCf = contest.platform === 'Codeforces';
+  const cookie = isCf ? state.cfSessionCookie : state.lcSessionCookie;
+
+  // If no cookie configured yet, guide user to Session Settings modal
+  if (!cookie || !cookie.trim()) {
+    openContestSessionModal(isCf ? 'codeforces' : 'leetcode');
+    showToast(`Please enter your ${contest.platform} session cookie first to register directly in-app!`);
+    return;
+  }
+
+  const btn = document.getElementById(`regBtn_${contestId}`);
+  const originalHtml = btn ? btn.innerHTML : '';
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = `<span class="animate-spin inline-block w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full"></span> <span>Registering...</span>`;
+  }
+
+  try {
+    const payload = {
+      platform: contest.platform,
+      contestId: isCf ? contest.id.replace('cf-', '') : contest.id,
+      contestSlug: !isCf ? contest.id.replace('lc-', '') : '',
+      contestTitle: contest.title,
+      cookie: cookie
+    };
+
+    const res = await fetch('/api/contests/register', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+
+    const data = await res.json();
+
+    if (data.success) {
+      if (!state.registeredContestIds.includes(contest.id)) {
+        state.registeredContestIds.push(contest.id);
+        saveRegisteredContests();
+      }
+      showToast(data.message || `Successfully registered for ${contest.title}!`);
+      renderContests(state.currentContestFilter || 'all');
+      setupNextContestCountdown();
+    } else {
+      showToast(`Registration note: ${data.error || 'Check status'}`);
+      if (data.directUrl) {
+        window.open(data.directUrl, '_blank');
+      }
+      if (btn) {
+        btn.disabled = false;
+        btn.innerHTML = originalHtml;
+      }
+    }
+  } catch (err) {
+    showToast(`Error registering: ${err.message}`);
+    if (btn) {
+      btn.disabled = false;
+      btn.innerHTML = originalHtml;
+    }
+  }
+}
+
+function handleUnregisterContest(contestId) {
+  state.registeredContestIds = state.registeredContestIds.filter(id => id !== contestId);
+  saveRegisteredContests();
+  showToast('Removed contest from your registered list.');
+  renderContests(state.currentContestFilter || 'all');
+  setupNextContestCountdown();
+}
+
+function saveRegisteredContests() {
+  localStorage.setItem('registeredContestIds', JSON.stringify(state.registeredContestIds));
+  updateRegisteredBadges();
+}
+
+function updateRegisteredBadges() {
+  const badge = document.getElementById('registeredFilterBadge');
+  if (badge) {
+    const count = state.registeredContestIds.length;
+    badge.textContent = count;
+    if (count > 0) {
+      badge.classList.remove('hidden');
+      badge.classList.add('inline-flex');
+    } else {
+      badge.classList.add('hidden');
+      badge.classList.remove('inline-flex');
+    }
+  }
+}
+
+// --------------------------------------------------------
+// CONTEST SESSION SETTINGS MODAL MANAGEMENT
+// --------------------------------------------------------
+function openContestSessionModal(defaultTab = 'codeforces') {
+  const modal = document.getElementById('contestSessionModal');
+  if (!modal) return;
+
+  // Set inputs to saved values
+  const cfInput = document.getElementById('cfCookieInput');
+  const lcInput = document.getElementById('lcCookieInput');
+  if (cfInput) cfInput.value = state.cfSessionCookie || '';
+  if (lcInput) lcInput.value = state.lcSessionCookie || '';
+
+  // Switch to requested tab
+  switchSessionTab(defaultTab);
+  updateSessionStatusBadges();
+
+  modal.classList.remove('hidden');
+  modal.classList.add('flex');
+}
+
+function closeContestSessionModal() {
+  const modal = document.getElementById('contestSessionModal');
+  if (!modal) return;
+  modal.classList.add('hidden');
+  modal.classList.remove('flex');
+}
+
+function switchSessionTab(platform) {
+  const cfBtn = document.getElementById('cfSessionTabBtn');
+  const lcBtn = document.getElementById('lcSessionTabBtn');
+  const cfPanel = document.getElementById('cfSessionPanel');
+  const lcPanel = document.getElementById('lcSessionPanel');
+
+  if (!cfBtn || !lcBtn || !cfPanel || !lcPanel) return;
+
+  if (platform === 'codeforces') {
+    cfBtn.className = 'flex-1 py-2 rounded-lg text-xs font-bold flex items-center justify-center gap-2 bg-blue-600 text-white transition-all shadow-sm';
+    lcBtn.className = 'flex-1 py-2 rounded-lg text-xs font-bold flex items-center justify-center gap-2 text-slate-400 hover:text-white transition-all';
+    cfPanel.classList.remove('hidden');
+    lcPanel.classList.add('hidden');
+  } else {
+    lcBtn.className = 'flex-1 py-2 rounded-lg text-xs font-bold flex items-center justify-center gap-2 bg-amber-600 text-white transition-all shadow-sm';
+    cfBtn.className = 'flex-1 py-2 rounded-lg text-xs font-bold flex items-center justify-center gap-2 text-slate-400 hover:text-white transition-all';
+    lcPanel.classList.remove('hidden');
+    cfPanel.classList.add('hidden');
+  }
+}
+
+function updateSessionStatusBadges() {
+  const cfBadge = document.getElementById('cfSessionStatusBadge');
+  const lcBadge = document.getElementById('lcSessionStatusBadge');
+  const dot = document.getElementById('sessionStatusDot');
+
+  // Codeforces status
+  if (cfBadge) {
+    if (state.cfAccountHandle) {
+      cfBadge.innerHTML = `<span class="w-2 h-2 rounded-full bg-emerald-400"></span><span class="text-emerald-400">Connected as @${state.cfAccountHandle}</span>`;
+    } else if (state.cfSessionCookie) {
+      cfBadge.innerHTML = `<span class="w-2 h-2 rounded-full bg-amber-400"></span><span class="text-amber-400">Cookie Saved (Ready)</span>`;
+    } else {
+      cfBadge.innerHTML = `<span class="w-2 h-2 rounded-full bg-slate-500"></span><span class="text-slate-400">Not Configured</span>`;
+    }
+  }
+
+  // LeetCode status
+  if (lcBadge) {
+    if (state.lcAccountUsername) {
+      lcBadge.innerHTML = `<span class="w-2 h-2 rounded-full bg-emerald-400"></span><span class="text-emerald-400">Connected as @${state.lcAccountUsername}</span>`;
+    } else if (state.lcSessionCookie) {
+      lcBadge.innerHTML = `<span class="w-2 h-2 rounded-full bg-amber-400"></span><span class="text-amber-400">Cookie Saved (Ready)</span>`;
+    } else {
+      lcBadge.innerHTML = `<span class="w-2 h-2 rounded-full bg-slate-500"></span><span class="text-slate-400">Not Configured</span>`;
+    }
+  }
+
+  // Header status dot
+  if (dot) {
+    const hasBoth = state.cfSessionCookie && state.lcSessionCookie;
+    const hasOne = state.cfSessionCookie || state.lcSessionCookie;
+    dot.className = hasBoth
+      ? 'w-2 h-2 rounded-full bg-emerald-400'
+      : (hasOne ? 'w-2 h-2 rounded-full bg-amber-400' : 'w-2 h-2 rounded-full bg-slate-500');
+  }
+}
+
+async function testSession(platform) {
+  const isCf = platform === 'codeforces';
+  const input = document.getElementById(isCf ? 'cfCookieInput' : 'lcCookieInput');
+  const btn = document.getElementById(isCf ? 'testCfSessionBtn' : 'testLcSessionBtn');
+  const cookie = input ? input.value.trim() : '';
+
+  if (!cookie) {
+    showToast(`Please paste your ${isCf ? 'Codeforces' : 'LeetCode'} cookie string first.`);
+    return;
+  }
+
+  const originalHtml = btn ? btn.innerHTML : '';
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = `<span class="animate-spin inline-block w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full"></span> <span>Verifying...</span>`;
+  }
+
+  try {
+    const res = await fetch('/api/contests/verify-session', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ platform, cookie })
+    });
+
+    const data = await res.json();
+
+    if (data.success) {
+      if (isCf) {
+        state.cfSessionCookie = cookie;
+        state.cfAccountHandle = data.handle || '';
+        localStorage.setItem('cfSessionCookie', cookie);
+        if (data.handle) localStorage.setItem('cfAccountHandle', data.handle);
+        showToast(`Codeforces session verified: ${data.handle}!`);
+      } else {
+        state.lcSessionCookie = cookie;
+        state.lcAccountUsername = data.username || '';
+        localStorage.setItem('lcSessionCookie', cookie);
+        if (data.username) localStorage.setItem('lcAccountUsername', data.username);
+        showToast(`LeetCode session verified: @${data.username}!`);
+      }
+      updateSessionStatusBadges();
+    } else {
+      showToast(`Verification failed: ${data.error || 'Invalid session cookie'}`);
+    }
+  } catch (err) {
+    showToast(`Error verifying session: ${err.message}`);
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.innerHTML = originalHtml;
+    }
+  }
+}
+
+function saveSession(platform) {
+  const isCf = platform === 'codeforces';
+  const input = document.getElementById(isCf ? 'cfCookieInput' : 'lcCookieInput');
+  const cookie = input ? input.value.trim() : '';
+
+  if (!cookie) {
+    showToast(`Please enter a valid ${isCf ? 'Codeforces' : 'LeetCode'} cookie string.`);
+    return;
+  }
+
+  if (isCf) {
+    state.cfSessionCookie = cookie;
+    localStorage.setItem('cfSessionCookie', cookie);
+    showToast('Codeforces session cookie saved locally!');
+  } else {
+    state.lcSessionCookie = cookie;
+    localStorage.setItem('lcSessionCookie', cookie);
+    showToast('LeetCode session cookie saved locally!');
+  }
+
+  updateSessionStatusBadges();
+  testSession(platform);
+}
+
+function clearAllSessions() {
+  state.cfSessionCookie = '';
+  state.lcSessionCookie = '';
+  state.cfAccountHandle = '';
+  state.lcAccountUsername = '';
+  localStorage.removeItem('cfSessionCookie');
+  localStorage.removeItem('lcSessionCookie');
+  localStorage.removeItem('cfAccountHandle');
+  localStorage.removeItem('lcAccountUsername');
+
+  const cfInput = document.getElementById('cfCookieInput');
+  const lcInput = document.getElementById('lcCookieInput');
+  if (cfInput) cfInput.value = '';
+  if (lcInput) lcInput.value = '';
+
+  updateSessionStatusBadges();
+  showToast('All saved contest sessions have been cleared.');
+}
+
+function setupContestSessionModalListeners() {
+  const openBtn = document.getElementById('openContestAuthModalBtn');
+  const closeBtn = document.getElementById('closeContestSessionModalBtn');
+  const cfTab = document.getElementById('cfSessionTabBtn');
+  const lcTab = document.getElementById('lcSessionTabBtn');
+  const testCfBtn = document.getElementById('testCfSessionBtn');
+  const saveCfBtn = document.getElementById('saveCfSessionBtn');
+  const testLcBtn = document.getElementById('testLcSessionBtn');
+  const saveLcBtn = document.getElementById('saveLcSessionBtn');
+  const clearBtn = document.getElementById('clearAllSessionsBtn');
+
+  if (openBtn) openBtn.addEventListener('click', () => openContestSessionModal('codeforces'));
+  if (closeBtn) closeBtn.addEventListener('click', closeContestSessionModal);
+  if (cfTab) cfTab.addEventListener('click', () => switchSessionTab('codeforces'));
+  if (lcTab) lcTab.addEventListener('click', () => switchSessionTab('leetcode'));
+  if (testCfBtn) testCfBtn.addEventListener('click', () => testSession('codeforces'));
+  if (saveCfBtn) saveCfBtn.addEventListener('click', () => saveSession('codeforces'));
+  if (testLcBtn) testLcBtn.addEventListener('click', () => testSession('leetcode'));
+  if (saveLcBtn) saveLcBtn.addEventListener('click', () => saveSession('leetcode'));
+  if (clearBtn) clearBtn.addEventListener('click', clearAllSessions);
+
+  // Close when clicking modal backdrop
+  const modal = document.getElementById('contestSessionModal');
+  if (modal) {
+    modal.addEventListener('click', (e) => {
+      if (e.target === modal) closeContestSessionModal();
+    });
+  }
+
+  updateSessionStatusBadges();
 }
 
 function generateGoogleCalendarUrl(contest) {

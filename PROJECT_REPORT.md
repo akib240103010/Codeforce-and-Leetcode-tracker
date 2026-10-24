@@ -44,7 +44,8 @@ Tracker for codeforces and Leetcode/
 │   ├── services/
 │   │   ├── codeforcesService.js    # CF user info, rating history, submissions, tag analysis
 │   │   ├── leetcodeService.js      # LC GraphQL query, multi-year streak aggregation, stats
-│   │   └── contestService.js       # Contest scheduling aggregator for CF & LC
+│   │   ├── contestService.js       # Contest scheduling aggregator for CF & LC
+│   │   └── registrationService.js  # In-App contest registration & session cookie verification
 │   ├── utils/
 │   │   ├── avatar.js               # Avatar URL normalizer, default detector, SVG initial generator
 │   │   ├── cache.js                # In-memory Map cache with TTL eviction logic
@@ -126,6 +127,13 @@ Tracker for codeforces and Leetcode/
 - **Dark & Light Mode:** Seamless theme toggling with CSS variables and Tailwind classes.
 - **Local Persistence:** Theme preference and last queried handles are stored in `localStorage`.
 - **Fully Responsive:** Tested and optimized for mobile screens, tablets, laptops, and ultra-wide desktop monitors.
+
+### H. In-App Direct Contest Registration & Session Proxy
+- **1-Click Registration Directly from UI:** Users can register for upcoming Codeforces and LeetCode contests straight from their dashboard without opening external tabs.
+- **Session Credentials Management:** Secure local storage for session cookies (`JSESSIONID`, `39ce7` for Codeforces; `LEETCODE_SESSION`, `csrftoken` for LeetCode) with a step-by-step 15-second guide.
+- **Connection Verifier:** Interactive "Test Connection" button that checks cookies against upstream APIs and confirms active handles (e.g., "Connected as @username").
+- **Registered Contests Tracking:** Dedicated "Registered" filter tab, glowing green badges on registered cards, and overview countdown synchronization.
+- **Graceful Fallbacks:** Direct one-click fallback links if Cloudflare challenges or anti-bot checks prevent headless API registration.
 
 ---
 
@@ -275,6 +283,16 @@ All backend endpoints return standardized JSON structures with caching headers.
 - **Codeforces Avatar:** `GET /api/cf/avatar/:handle`
 - **LeetCode Avatar:** `GET /api/lc/avatar/:username`
 - Streams cached image buffer or dynamically serves a generated SVG fallback with user initial.
+
+### 5. Session Verification
+- **Endpoint:** `POST /api/contests/verify-session`
+- **Payload:** `{ "platform": "Codeforces" | "LeetCode", "cookie": "..." }`
+- **Response:** `{ "success": true, "valid": true, "handle": "tourist" }`
+
+### 6. In-App Contest Registration
+- **Endpoint:** `POST /api/contests/register`
+- **Payload:** `{ "platform": "Codeforces", "contestId": "2024", "contestTitle": "Round 998", "cookie": "..." }`
+- **Response:** `{ "success": true, "message": "Successfully registered for Round 998!" }`
 
 ---
 
